@@ -32,7 +32,28 @@ CREATE TABLE IF NOT EXISTS recipes (
     description TEXT
 );
 
--- 3. Add RLS (Row Level Security) policies for user_profiles
+-- 3. Create the recipe_likes table for tracking user likes
+CREATE TABLE IF NOT EXISTS recipe_likes (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    recipe_id UUID REFERENCES recipes(id) ON DELETE CASCADE NOT NULL,
+    UNIQUE(user_id, recipe_id) -- Prevent duplicate likes from same user
+);
+
+-- 4. Create the recipe_comments table for user comments
+CREATE TABLE IF NOT EXISTS recipe_comments (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+    recipe_id UUID REFERENCES recipes(id) ON DELETE CASCADE NOT NULL,
+    content TEXT NOT NULL CHECK (length(content) > 0 AND length(content) <= 1000),
+    parent_id UUID REFERENCES recipe_comments(id) ON DELETE CASCADE, -- For nested comments/replies
+    is_edited BOOLEAN DEFAULT FALSE
+);
+
+-- 5. Add RLS (Row Level Security) policies for user_profiles
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
 
 -- Policy to allow users to view all profiles (for public display)
@@ -51,7 +72,7 @@ CREATE POLICY "Users can update their own profile" ON user_profiles
 CREATE POLICY "Users can delete their own profile" ON user_profiles
     FOR DELETE USING (auth.uid() = user_id);
 
--- 4. Add RLS (Row Level Security) policies for recipes
+-- 6. Add RLS (Row Level Security) policies for recipes
 ALTER TABLE recipes ENABLE ROW LEVEL SECURITY;
 
 -- Policy to allow users to see their own recipes
@@ -70,7 +91,41 @@ CREATE POLICY "Users can update their own recipes" ON recipes
 CREATE POLICY "Users can delete their own recipes" ON recipes
     FOR DELETE USING (auth.uid() = user_id);
 
--- 5. Create storage bucket for images
+-- 7. Add RLS (Row Level Security) policies for recipe_likes
+ALTER TABLE recipe_likes ENABLE ROW LEVEL SECURITY;
+
+-- Policy to allow users to view all likes
+CREATE POLICY "Likes are viewable by everyone" ON recipe_likes
+    FOR SELECT USING (true);
+
+-- Policy to allow authenticated users to insert their own likes
+CREATE POLICY "Users can insert their own likes" ON recipe_likes
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Policy to allow users to delete their own likes
+CREATE POLICY "Users can delete their own likes" ON recipe_likes
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- 8. Add RLS (Row Level Security) policies for recipe_comments
+ALTER TABLE recipe_comments ENABLE ROW LEVEL SECURITY;
+
+-- Policy to allow users to view all comments
+CREATE POLICY "Comments are viewable by everyone" ON recipe_comments
+    FOR SELECT USING (true);
+
+-- Policy to allow authenticated users to insert their own comments
+CREATE POLICY "Users can insert their own comments" ON recipe_comments
+    FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- Policy to allow users to update their own comments
+CREATE POLICY "Users can update their own comments" ON recipe_comments
+    FOR UPDATE USING (auth.uid() = user_id);
+
+-- Policy to allow users to delete their own comments
+CREATE POLICY "Users can delete their own comments" ON recipe_comments
+    FOR DELETE USING (auth.uid() = user_id);
+
+-- 9. Create storage bucket for images
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 VALUES (
     'images', 
@@ -84,7 +139,7 @@ ON CONFLICT (id) DO UPDATE SET
     file_size_limit = EXCLUDED.file_size_limit,
     allowed_mime_types = EXCLUDED.allowed_mime_types;
 
--- 6. Create storage policies for the images bucket
+-- 10. Create storage policies for the images bucket
 -- Drop existing policies to avoid conflicts
 DROP POLICY IF EXISTS "Images are publicly accessible" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can upload images" ON storage.objects;
@@ -116,13 +171,22 @@ CREATE POLICY "Users can delete their own images" ON storage.objects
         AND auth.uid()::text = (storage.foldername(name))[1]
     );
 
--- 7. Create indexes for better performance
+-- 11. Create indexes for better performance
 CREATE INDEX IF NOT EXISTS user_profiles_user_id_idx ON user_profiles(user_id);
 CREATE INDEX IF NOT EXISTS user_profiles_user_name_idx ON user_profiles(user_name);
 CREATE INDEX IF NOT EXISTS recipes_user_id_idx ON recipes(user_id);
 CREATE INDEX IF NOT EXISTS recipes_created_at_idx ON recipes(created_at DESC);
 
--- 8. Create function to automatically update updated_at
+-- Indexes for likes and comments
+CREATE INDEX IF NOT EXISTS recipe_likes_user_id_idx ON recipe_likes(user_id);
+CREATE INDEX IF NOT EXISTS recipe_likes_recipe_id_idx ON recipe_likes(recipe_id);
+CREATE INDEX IF NOT EXISTS recipe_likes_created_at_idx ON recipe_likes(created_at DESC);
+CREATE INDEX IF NOT EXISTS recipe_comments_user_id_idx ON recipe_comments(user_id);
+CREATE INDEX IF NOT EXISTS recipe_comments_recipe_id_idx ON recipe_comments(recipe_id);
+CREATE INDEX IF NOT EXISTS recipe_comments_parent_id_idx ON recipe_comments(parent_id);
+CREATE INDEX IF NOT EXISTS recipe_comments_created_at_idx ON recipe_comments(created_at DESC);
+
+-- 12. Create function to automatically update updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -131,7 +195,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- 9. Create triggers to automatically update updated_at
+-- 13. Create triggers to automatically update updated_at
 DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON user_profiles;
 CREATE TRIGGER update_user_profiles_updated_at 
     BEFORE UPDATE ON user_profiles 
@@ -144,7 +208,13 @@ CREATE TRIGGER update_recipes_updated_at
     FOR EACH ROW 
     EXECUTE FUNCTION update_updated_at_column();
 
--- 10. Create function to handle new user profile creation
+DROP TRIGGER IF EXISTS update_recipe_comments_updated_at ON recipe_comments;
+CREATE TRIGGER update_recipe_comments_updated_at 
+    BEFORE UPDATE ON recipe_comments 
+    FOR EACH ROW 
+    EXECUTE FUNCTION update_updated_at_column();
+
+-- 14. Create function to handle new user profile creation
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -158,8 +228,44 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 11. Create trigger to automatically create profile on user signup
+-- 15. Create trigger to automatically create profile on user signup
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
-    FOR EACH ROW EXECUTE FUNCTION handle_new_user(); 
+    FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- 16. Create function to get recipe like count
+CREATE OR REPLACE FUNCTION get_recipe_like_count(recipe_uuid UUID)
+RETURNS INTEGER AS $$
+BEGIN
+    RETURN (
+        SELECT COUNT(*)::INTEGER 
+        FROM recipe_likes 
+        WHERE recipe_id = recipe_uuid
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 17. Create function to get recipe comment count
+CREATE OR REPLACE FUNCTION get_recipe_comment_count(recipe_uuid UUID)
+RETURNS INTEGER AS $$
+BEGIN
+    RETURN (
+        SELECT COUNT(*)::INTEGER 
+        FROM recipe_comments 
+        WHERE recipe_id = recipe_uuid
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 18. Create function to check if user has liked a recipe
+CREATE OR REPLACE FUNCTION has_user_liked_recipe(recipe_uuid UUID, user_uuid UUID)
+RETURNS BOOLEAN AS $$
+BEGIN
+    RETURN EXISTS(
+        SELECT 1 
+        FROM recipe_likes 
+        WHERE recipe_id = recipe_uuid AND user_id = user_uuid
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER; 

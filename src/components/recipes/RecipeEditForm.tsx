@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import Image from 'next/image';
+import { RecipeWithSocial } from '../../types/supabase';
 
 interface Recipe {
   id: string;
@@ -16,8 +17,8 @@ interface Recipe {
 }
 
 interface RecipeEditFormProps {
-  recipe: Recipe;
-  onSave: (recipe: Recipe) => void;
+  recipe: RecipeWithSocial;
+  onSave: (recipe: RecipeWithSocial) => void;
   onCancel: () => void;
 }
 

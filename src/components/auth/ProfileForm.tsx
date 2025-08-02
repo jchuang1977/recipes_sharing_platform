@@ -47,7 +47,7 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
         .from('user_profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         setError(error.message);
@@ -95,15 +95,15 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
 
       const { error } = await supabase
         .from('user_profiles')
-        .update({
+        .upsert({
+          user_id: user.id,
           user_name: formattedData.user_name,
           full_name: formattedData.full_name,
           bio: formattedData.bio,
           location: formattedData.location,
           website: formattedData.website,
           social_links: formattedData.social_links
-        })
-        .eq('user_id', user.id);
+        });
 
       if (error) {
         setError(error.message);

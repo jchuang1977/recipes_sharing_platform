@@ -7,10 +7,9 @@ import Link from 'next/link';
 
 interface ProfileDisplayProps {
   userId?: string;
-  showEditButton?: boolean;
 }
 
-export function ProfileDisplay({ userId, showEditButton = false }: ProfileDisplayProps) {
+export function ProfileDisplay({ userId }: ProfileDisplayProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,18 +83,10 @@ export function ProfileDisplay({ userId, showEditButton = false }: ProfileDispla
 
   return (
     <div className="w-full max-w-2xl mx-auto p-6 bg-white dark:bg-gray-900 rounded shadow">
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6">
         <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
           {profile.full_name || profile.user_name}
         </h2>
-        {showEditButton && (
-          <Link
-            href="/profile"
-            className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 transition-colors"
-          >
-            Edit Profile
-          </Link>
-        )}
       </div>
 
       <div className="space-y-6">

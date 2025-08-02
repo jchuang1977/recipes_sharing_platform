@@ -1,9 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { createBrowserClient } from '@supabase/ssr';
 import { RecipeEditForm } from './RecipeEditForm';
+import { RecipeSearch, SearchFilters } from './RecipeSearch';
+import { filterAndSortRecipes, formatCookingTime, getDifficultyColor } from '../../utils/recipeUtils';
+import { RecipeLikeButton } from './RecipeLikeButton';
+import { RecipeComments } from './RecipeComments';
+import { RecipeWithSocial } from '../../types/supabase';
 
 export interface Recipe {
   id: string;
@@ -17,13 +22,20 @@ export interface Recipe {
 }
 
 interface RecipeListProps {
-  recipes: Recipe[];
+  recipes: RecipeWithSocial[];
 }
 
 export function RecipeList({ recipes }: RecipeListProps) {
   const [editingRecipe, setEditingRecipe] = useState<string | null>(null);
   const [deletingRecipe, setDeletingRecipe] = useState<string | null>(null);
-  const [localRecipes, setLocalRecipes] = useState<Recipe[]>(recipes);
+  const [localRecipes, setLocalRecipes] = useState<RecipeWithSocial[]>(recipes);
+  const [filteredRecipes, setFilteredRecipes] = useState<RecipeWithSocial[]>(recipes);
+  const [searchFilters, setSearchFilters] = useState<SearchFilters>({
+    searchTerm: '',
+    difficulty: '',
+    maxCookingTime: '',
+    sortBy: 'newest'
+  });
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -82,7 +94,7 @@ export function RecipeList({ recipes }: RecipeListProps) {
     setEditingRecipe(recipeId);
   };
 
-  const handleEditComplete = (updatedRecipe: Recipe) => {
+  const handleEditComplete = (updatedRecipe: RecipeWithSocial) => {
     setLocalRecipes(prev => 
       prev.map(r => r.id === updatedRecipe.id ? updatedRecipe : r)
     );
@@ -93,26 +105,22 @@ export function RecipeList({ recipes }: RecipeListProps) {
     setEditingRecipe(null);
   };
 
-  const formatCookingTime = (minutes: number | null | undefined) => {
-    if (!minutes) return null;
-    if (minutes < 60) return `${minutes}m`;
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
-  };
+  // Update filtered recipes when localRecipes or searchFilters change
+  useEffect(() => {
+    const filtered = filterAndSortRecipes(localRecipes, searchFilters);
+    setFilteredRecipes(filtered);
+  }, [localRecipes, searchFilters]);
 
-  const getDifficultyColor = (difficulty: string | null | undefined) => {
-    switch (difficulty) {
-      case 'Easy': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'Medium': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'Hard': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-    }
+  // Handle search
+  const handleSearch = (filters: SearchFilters) => {
+    setSearchFilters(filters);
   };
 
   return (
-    <ul className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
-      {localRecipes.map((recipe) => (
+    <>
+      <RecipeSearch onSearch={handleSearch} totalRecipes={filteredRecipes.length} />
+      <ul className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
+        {filteredRecipes.map((recipe) => (
         <li key={recipe.id} className="bg-gray-100 dark:bg-gray-800 rounded shadow p-4 flex flex-col items-center relative">
           {/* Edit/Delete Buttons */}
           <div className="absolute top-2 right-2 flex gap-1">
@@ -215,6 +223,38 @@ export function RecipeList({ recipes }: RecipeListProps) {
             )}
           </div>
 
+          {/* Social Features */}
+          <div className="w-full mt-4 space-y-3">
+            {/* Like Button */}
+            <RecipeLikeButton
+              recipeId={recipe.id}
+              initialLikeCount={recipe.like_count}
+              initialIsLiked={recipe.is_liked_by_user}
+              onLikeChange={(liked, newCount) => {
+                setLocalRecipes(prev => 
+                  prev.map(r => r.id === recipe.id 
+                    ? { ...r, like_count: newCount, is_liked_by_user: liked }
+                    : r
+                  )
+                );
+              }}
+            />
+            
+            {/* Comments Section */}
+            <RecipeComments
+              recipeId={recipe.id}
+              initialCommentCount={recipe.comment_count}
+              onCommentChange={(newCount) => {
+                setLocalRecipes(prev => 
+                  prev.map(r => r.id === recipe.id 
+                    ? { ...r, comment_count: newCount }
+                    : r
+                  )
+                );
+              }}
+            />
+          </div>
+
           {/* Created Date */}
           <span className="text-xs text-gray-500 dark:text-gray-400 mt-3">
             {new Date(recipe.created_at).toLocaleDateString()}
@@ -232,6 +272,7 @@ export function RecipeList({ recipes }: RecipeListProps) {
           )}
         </li>
       ))}
-    </ul>
+      </ul>
+    </>
   );
 } 

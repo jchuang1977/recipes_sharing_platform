@@ -41,3 +41,38 @@ export interface ProfileFormData {
     youtube?: string;
   };
 }
+
+export interface RecipeLike {
+  id: string;
+  created_at: string;
+  user_id: string;
+  recipe_id: string;
+}
+
+export interface RecipeComment {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+  recipe_id: string;
+  content: string;
+  parent_id: string | null;
+  is_edited: boolean;
+}
+
+export interface RecipeWithSocial extends Recipe {
+  like_count: number;
+  comment_count: number;
+  is_liked_by_user: boolean;
+  user_profile?: {
+    user_name: string;
+    full_name: string | null;
+  };
+}
+
+export interface CommentWithUser extends RecipeComment {
+  user_profile: {
+    user_name: string;
+    full_name: string | null;
+  };
+}
