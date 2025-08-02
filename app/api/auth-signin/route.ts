@@ -1,11 +1,12 @@
-// src/utils/supabaseServer.ts
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
-export const createSupabaseServerClient = async () => {
+export async function POST(request: NextRequest) {
+  const { email, password } = await request.json();
   const cookieStore = await cookies();
-
-  return createServerClient(
+  
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -27,5 +28,13 @@ export const createSupabaseServerClient = async () => {
       },
     }
   );
-};
-// Note: 'created_at' is expected to be present in the 'recipes' table for ordering in dashboard queries.
+  
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 401 });
+  }
+
+  // The auth helper will automatically set the cookies on the response
+  return NextResponse.json({ success: true });
+} 

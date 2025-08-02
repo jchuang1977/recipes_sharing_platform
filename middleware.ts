@@ -1,25 +1,50 @@
 // middleware.ts
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({
+    request,
+  });
 
-import { createSupabaseServerClient } from './src/utils/supabaseServer';
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({
+            request,
+          });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
 
-export default async function Page() {
-  const supabase = createSupabaseServerClient();
-  const { data } = await supabase.from('recipes').select('*');
-  // ...
-}
+  // IMPORTANT: Avoid writing any logic between createServerClient and
+  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
+  // issues with users being randomly logged out.
 
-export function middleware(request: NextRequest) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   // Example: Protect all routes under /dashboard
   if (request.nextUrl.pathname.startsWith('/dashboard')) {
-    const supabaseToken = request.cookies.get('sb-access-token');
-    if (!supabaseToken) {
+    if (!user) {
       // Redirect to login if not authenticated
       return NextResponse.redirect(new URL('/login', request.url));
     }
   }
-  return NextResponse.next();
+
+  return supabaseResponse;
 }
 
 // Optionally, specify which paths to match
