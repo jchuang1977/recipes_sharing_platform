@@ -31,10 +31,7 @@ export function RecipeComments({
     fetchComments();
   }, [recipeId]);
 
-  // Update comment count when comments change
-  useEffect(() => {
-    onCommentChange?.(comments.length);
-  }, [comments.length, onCommentChange]);
+
 
   const fetchComments = async () => {
     setIsLoading(true);
@@ -78,7 +75,12 @@ export function RecipeComments({
       if (response.ok) {
         const data = await response.json();
         console.log('Submit response data:', data);
-        setComments(prev => [data.comment, ...prev]);
+        setComments(prev => {
+          const newComments = [data.comment, ...prev];
+          // Update comment count in parent with the new count
+          onCommentChange?.(newComments.length);
+          return newComments;
+        });
         setNewComment('');
       } else {
         const errorData = await response.json();
@@ -127,7 +129,12 @@ export function RecipeComments({
       });
 
       if (response.ok) {
-        setComments(prev => prev.filter(c => c.id !== commentId));
+        setComments(prev => {
+          const newComments = prev.filter(c => c.id !== commentId);
+          // Update comment count in parent with the new count
+          onCommentChange?.(newComments.length);
+          return newComments;
+        });
       }
     } catch (error) {
       console.error('Error deleting comment:', error);

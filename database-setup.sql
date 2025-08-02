@@ -75,9 +75,9 @@ CREATE POLICY "Users can delete their own profile" ON user_profiles
 -- 6. Add RLS (Row Level Security) policies for recipes
 ALTER TABLE recipes ENABLE ROW LEVEL SECURITY;
 
--- Policy to allow users to see their own recipes
-CREATE POLICY "Users can view their own recipes" ON recipes
-    FOR SELECT USING (auth.uid() = user_id);
+-- Policy to allow users to see all recipes (for public recipe sharing)
+CREATE POLICY "Users can view all recipes" ON recipes
+    FOR SELECT USING (true);
 
 -- Policy to allow users to insert their own recipes
 CREATE POLICY "Users can insert their own recipes" ON recipes
@@ -269,3 +269,19 @@ BEGIN
     );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER; 
+
+-- ============================================================================
+-- FIX FOR EXISTING DATABASES: Update RLS policy to allow viewing all recipes
+-- ============================================================================
+-- If you have an existing database with the old policy, run these commands:
+
+-- Drop the old restrictive policy
+-- DROP POLICY IF EXISTS "Users can view their own recipes" ON recipes;
+
+-- Create the new permissive policy
+-- CREATE POLICY "Users can view all recipes" ON recipes
+--     FOR SELECT USING (true);
+
+-- ============================================================================
+-- END OF FIX
+-- ============================================================================ 
