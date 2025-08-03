@@ -2,10 +2,7 @@ import { createSupabaseServerClient } from '../../../../src/utils/supabaseServer
 import { NextRequest, NextResponse } from 'next/server';
 
 // PUT update comment
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PUT(request: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -17,7 +14,17 @@ export async function PUT(
       );
     }
 
-    const { id: commentId } = await params;
+    // Get comment ID from URL search params
+    const url = new URL(request.url);
+    const commentId = url.searchParams.get('id');
+
+    if (!commentId) {
+      return NextResponse.json(
+        { error: 'Comment ID is required' },
+        { status: 400 }
+      );
+    }
+
     const { content } = await request.json();
 
     if (!content || content.trim().length === 0) {
@@ -85,14 +92,6 @@ export async function PUT(
       user_profile: userProfile || { user_name: 'Unknown', full_name: null }
     };
 
-    if (error) {
-      console.error('Error updating comment:', error);
-      return NextResponse.json(
-        { error: 'Failed to update comment' },
-        { status: 500 }
-      );
-    }
-
     return NextResponse.json({ comment: commentWithUser });
   } catch (error) {
     console.error('Error in comment PUT endpoint:', error);
@@ -104,10 +103,7 @@ export async function PUT(
 }
 
 // DELETE comment
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function DELETE(request: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -119,7 +115,16 @@ export async function DELETE(
       );
     }
 
-    const { id: commentId } = await params;
+    // Get comment ID from URL search params
+    const url = new URL(request.url);
+    const commentId = url.searchParams.get('id');
+
+    if (!commentId) {
+      return NextResponse.json(
+        { error: 'Comment ID is required' },
+        { status: 400 }
+      );
+    }
 
     // Check if user owns the comment
     const { data: existingComment } = await supabase

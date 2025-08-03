@@ -1,14 +1,19 @@
-import { createSupabaseServerClient } from '../../../../../src/utils/supabaseServer';
+import { createSupabaseServerClient } from '../../../../src/utils/supabaseServer';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET comments for a recipe
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
-    const { id: recipeId } = await params;
+    const url = new URL(request.url);
+    const recipeId = url.searchParams.get('recipeId');
+
+    if (!recipeId) {
+      return NextResponse.json(
+        { error: 'Recipe ID is required' },
+        { status: 400 }
+      );
+    }
 
     const { data: comments, error } = await supabase
       .from('recipe_comments')
@@ -41,14 +46,6 @@ export async function GET(
       })
     );
 
-    if (error) {
-      console.error('Error fetching comments:', error);
-      return NextResponse.json(
-        { error: 'Failed to fetch comments' },
-        { status: 500 }
-      );
-    }
-
     return NextResponse.json({ comments: commentsWithUsers });
   } catch (error) {
     console.error('Error in comments GET endpoint:', error);
@@ -60,10 +57,7 @@ export async function GET(
 }
 
 // POST new comment
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -75,7 +69,16 @@ export async function POST(
       );
     }
 
-    const { id: recipeId } = await params;
+    const url = new URL(request.url);
+    const recipeId = url.searchParams.get('recipeId');
+
+    if (!recipeId) {
+      return NextResponse.json(
+        { error: 'Recipe ID is required' },
+        { status: 400 }
+      );
+    }
+
     const { content, parent_id } = await request.json();
 
     if (!content || content.trim().length === 0) {
@@ -122,14 +125,6 @@ export async function POST(
       ...comment,
       user_profile: userProfile || { user_name: 'Unknown', full_name: null }
     };
-
-    if (error) {
-      console.error('Error creating comment:', error);
-      return NextResponse.json(
-        { error: 'Failed to create comment' },
-        { status: 500 }
-      );
-    }
 
     return NextResponse.json({ comment: commentWithUser });
   } catch (error) {
