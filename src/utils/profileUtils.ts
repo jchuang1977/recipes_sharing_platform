@@ -1,4 +1,4 @@
-import { ProfileFormData } from '../types/supabase';
+import { ProfileFormData, Profile } from '../types/supabase';
 
 export function validateUsername(username: string): { isValid: boolean; error?: string } {
   if (!username) {
@@ -62,9 +62,8 @@ export function validateProfileData(data: ProfileFormData): { isValid: boolean; 
   };
 }
 
-export function formatProfileData(data: ProfileFormData): ProfileFormData {
+export function formatProfileData(data: ProfileFormData): Omit<Profile, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'avatar_url' | 'preferences'> {
   return {
-    ...data,
     user_name: data.user_name.trim().toLowerCase(),
     full_name: data.full_name?.trim() || null,
     bio: data.bio?.trim() || null,
@@ -75,7 +74,7 @@ export function formatProfileData(data: ProfileFormData): ProfileFormData {
         key,
         typeof value === 'string' ? value?.trim() || null : null
       ]).filter(([, value]) => value !== null)
-    ) : {}
+    ) : null
   };
 }
 
