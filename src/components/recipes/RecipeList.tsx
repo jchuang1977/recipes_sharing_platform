@@ -36,11 +36,21 @@ export function RecipeList({ recipes }: RecipeListProps) {
     maxCookingTime: '',
     sortBy: 'newest'
   });
+  const [currentUser, setCurrentUser] = useState<{ id: string } | null>(null);
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
+
+  // Get current user on component mount
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUser(user);
+    };
+    getUser();
+  }, [supabase.auth]);
 
   const handleDelete = async (recipeId: string) => {
     if (!confirm('Are you sure you want to delete this recipe? This action cannot be undone.')) {
@@ -122,34 +132,36 @@ export function RecipeList({ recipes }: RecipeListProps) {
       <ul className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
         {filteredRecipes.map((recipe) => (
         <li key={recipe.id} className="bg-gray-100 dark:bg-gray-800 rounded shadow p-4 flex flex-col items-center relative">
-          {/* Edit/Delete Buttons */}
-          <div className="absolute top-2 right-2 flex gap-1">
-            <button
-              onClick={() => handleEdit(recipe.id)}
-              className="p-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-              title="Edit recipe"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            </button>
-            <button
-              onClick={() => handleDelete(recipe.id)}
-              disabled={deletingRecipe === recipe.id}
-              className="p-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors disabled:opacity-50"
-              title="Delete recipe"
-            >
-              {deletingRecipe === recipe.id ? (
-                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-              ) : (
+          {/* Edit/Delete Buttons - Only show for recipe owner */}
+          {currentUser && recipe.user_id === currentUser.id && (
+            <div className="absolute top-2 right-2 flex gap-1">
+              <button
+                onClick={() => handleEdit(recipe.id)}
+                className="p-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                title="Edit recipe"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
-              )}
-            </button>
-          </div>
+              </button>
+              <button
+                onClick={() => handleDelete(recipe.id)}
+                disabled={deletingRecipe === recipe.id}
+                className="p-1 bg-red-500 text-white rounded hover:bg-red-600 transition-colors disabled:opacity-50"
+                title="Delete recipe"
+              >
+                {deletingRecipe === recipe.id ? (
+                  <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          )}
 
           {/* Recipe Image */}
           {recipe.image_url && (
@@ -223,36 +235,61 @@ export function RecipeList({ recipes }: RecipeListProps) {
             )}
           </div>
 
+          {/* Author Information */}
+          {recipe.user_profile && (
+            <div className="w-full mt-3 text-sm text-gray-600 dark:text-gray-400">
+              <span>By: {recipe.user_profile.full_name || recipe.user_profile.user_name}</span>
+            </div>
+          )}
+
           {/* Social Features */}
           <div className="w-full mt-4 space-y-3">
-            {/* Like Button */}
-            <RecipeLikeButton
-              recipeId={recipe.id}
-              initialLikeCount={recipe.like_count}
-              initialIsLiked={recipe.is_liked_by_user}
-              onLikeChange={(liked, newCount) => {
-                setLocalRecipes(prev => 
-                  prev.map(r => r.id === recipe.id 
-                    ? { ...r, like_count: newCount, is_liked_by_user: liked }
-                    : r
-                  )
-                );
-              }}
-            />
+            {/* Like Button - Only show for logged-in users */}
+            {currentUser ? (
+              <RecipeLikeButton
+                recipeId={recipe.id}
+                initialLikeCount={recipe.like_count}
+                initialIsLiked={recipe.is_liked_by_user}
+                onLikeChange={(liked, newCount) => {
+                  setLocalRecipes(prev => 
+                    prev.map(r => r.id === recipe.id 
+                      ? { ...r, like_count: newCount, is_liked_by_user: liked }
+                      : r
+                    )
+                  );
+                }}
+              />
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                </svg>
+                <span>{recipe.like_count} likes</span>
+              </div>
+            )}
             
-            {/* Comments Section */}
-            <RecipeComments
-              recipeId={recipe.id}
-              initialCommentCount={recipe.comment_count}
-              onCommentChange={(newCount) => {
-                setLocalRecipes(prev => 
-                  prev.map(r => r.id === recipe.id 
-                    ? { ...r, comment_count: newCount }
-                    : r
-                  )
-                );
-              }}
-            />
+            {/* Comments Section - Only show for logged-in users */}
+            {currentUser ? (
+              <RecipeComments
+                recipeId={recipe.id}
+                initialCommentCount={recipe.comment_count}
+                onCommentChange={(newCount) => {
+                  setLocalRecipes(prev => 
+                    prev.map(r => r.id === recipe.id 
+                      ? { ...r, comment_count: newCount }
+                      : r
+                    )
+                  );
+                }}
+              />
+            ) : (
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                <span>{recipe.comment_count} comments</span>
+              </div>
+            )}
           </div>
 
           {/* Created Date */}
