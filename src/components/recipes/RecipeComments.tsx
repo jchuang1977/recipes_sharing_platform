@@ -1,17 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { CommentWithUser } from '../../types/supabase';
 
 interface RecipeCommentsProps {
   recipeId: string;
   onCommentChange?: (newCount: number) => void;
+  initialCommentCount?: number;
 }
 
 export function RecipeComments({ 
   recipeId, 
-  onCommentChange 
+  onCommentChange,
+  initialCommentCount = 0
 }: RecipeCommentsProps) {
   const [comments, setComments] = useState<CommentWithUser[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -20,13 +22,7 @@ export function RecipeComments({
   const [editingComment, setEditingComment] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
 
-  useEffect(() => {
-    fetchComments();
-  }, [recipeId, fetchComments]);
-
-
-
-  const fetchComments = async () => {
+  const fetchComments = useCallback(async () => {
     setIsLoading(true);
     try {
       console.log('Fetching comments for recipe:', recipeId);
@@ -46,7 +42,11 @@ export function RecipeComments({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [recipeId]);
+
+  useEffect(() => {
+    fetchComments();
+  }, [fetchComments]);
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();

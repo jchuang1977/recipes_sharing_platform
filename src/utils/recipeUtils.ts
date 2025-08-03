@@ -1,5 +1,11 @@
-import { Recipe } from '@/components/recipes/RecipeList';
-import { SearchFilters } from '@/components/recipes/RecipeSearch';
+import { Recipe } from '@/types/supabase';
+
+export interface SearchFilters {
+  searchTerm: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard' | '';
+  maxCookingTime: string;
+  sortBy: 'newest' | 'oldest' | 'title' | 'cooking_time';
+}
 
 export function filterAndSortRecipes(recipes: Recipe[], filters: SearchFilters): Recipe[] {
   let filteredRecipes = [...recipes];
@@ -9,7 +15,7 @@ export function filterAndSortRecipes(recipes: Recipe[], filters: SearchFilters):
     const searchTerm = filters.searchTerm.toLowerCase().trim();
     filteredRecipes = filteredRecipes.filter(recipe => {
       const titleMatch = recipe.title.toLowerCase().includes(searchTerm);
-      const ingredientsMatch = recipe.ingredients?.some(ingredient =>
+      const ingredientsMatch = recipe.ingredients?.some((ingredient: string) =>
         ingredient.toLowerCase().includes(searchTerm)
       ) || false;
       return titleMatch || ingredientsMatch;

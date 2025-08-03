@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { Profile, ProfileFormData } from '@/types/supabase';
 import { validateProfileData, formatProfileData } from '../../utils/profileUtils';
@@ -28,12 +28,7 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  // Fetch user profile on component mount
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -65,7 +60,12 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [supabase.auth]);
+
+  // Fetch user profile on component mount
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,11 +118,11 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
   };
 
   const handleInputChange = (field: keyof ProfileFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev: ProfileFormData) => ({ ...prev, [field]: value }));
   };
 
   const handleSocialLinkChange = (platform: string, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev: ProfileFormData) => ({
       ...prev,
       social_links: {
         ...prev.social_links,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -15,6 +15,12 @@ export function Navigation() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
+  const checkUser = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setUser(user);
+    setLoading(false);
+  }, [supabase.auth]);
+
   useEffect(() => {
     checkUser();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -24,12 +30,6 @@ export function Navigation() {
 
     return () => subscription.unsubscribe();
   }, [checkUser, supabase.auth]);
-
-  const checkUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    setUser(user);
-    setLoading(false);
-  };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();

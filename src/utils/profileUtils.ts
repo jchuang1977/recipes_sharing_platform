@@ -44,15 +44,17 @@ export function validateProfileData(data: ProfileFormData): { isValid: boolean; 
   }
   
   // Validate social links
-  Object.entries(data.social_links).forEach(([platform, url]) => {
-    if (url && url.trim()) {
-      try {
-        new URL(url);
-      } catch {
-        errors[`social_links.${platform}`] = `Please enter a valid ${platform} URL`;
+  if (data.social_links) {
+    Object.entries(data.social_links).forEach(([platform, url]) => {
+      if (url && typeof url === 'string' && url.trim()) {
+        try {
+          new URL(url);
+        } catch {
+          errors[`social_links.${platform}`] = `Please enter a valid ${platform} URL`;
+        }
       }
-    }
-  });
+    });
+  }
   
   return {
     isValid: Object.keys(errors).length === 0,
@@ -68,12 +70,12 @@ export function formatProfileData(data: ProfileFormData): ProfileFormData {
     bio: data.bio?.trim() || null,
     location: data.location?.trim() || null,
     website: data.website?.trim() || null,
-    social_links: Object.fromEntries(
+    social_links: data.social_links ? Object.fromEntries(
       Object.entries(data.social_links).map(([key, value]) => [
         key,
-        value?.trim() || null
+        typeof value === 'string' ? value?.trim() || null : null
       ]).filter(([, value]) => value !== null)
-    )
+    ) : {}
   };
 }
 

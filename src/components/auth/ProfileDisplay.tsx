@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { Profile } from '@/types/supabase';
 
 interface ProfileDisplayProps {
   userId?: string;
+  showEditButton?: boolean;
 }
 
-export function ProfileDisplay({ userId }: ProfileDisplayProps) {
+export function ProfileDisplay({ userId, showEditButton = false }: ProfileDisplayProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,11 +19,7 @@ export function ProfileDisplay({ userId }: ProfileDisplayProps) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  useEffect(() => {
-    fetchProfile();
-  }, [userId, fetchProfile]);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     setLoading(true);
     try {
       let targetUserId = userId;
@@ -52,7 +49,11 @@ export function ProfileDisplay({ userId }: ProfileDisplayProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, supabase.auth]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   if (loading) {
     return (
