@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { Profile, ProfileFormData } from '@/types/supabase';
+import { Profile, ProfileFormData } from '../../types/supabase';
 import { validateProfileData, formatProfileData } from '../../utils/profileUtils';
 
 interface ProfileFormProps {

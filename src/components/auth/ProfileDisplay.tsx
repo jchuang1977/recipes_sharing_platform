@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
-import { Profile } from '@/types/supabase';
+import { Profile } from '../../types/supabase';
 
 interface ProfileDisplayProps {
   userId?: string;

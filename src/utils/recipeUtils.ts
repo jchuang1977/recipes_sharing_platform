@@ -1,4 +1,4 @@
-import { Recipe } from '@/types/supabase';
+import { Recipe } from '../types/supabase';
 
 export interface SearchFilters {
   searchTerm: string;

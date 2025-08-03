@@ -1,4 +1,4 @@
-import { ProfileFormData } from '@/types/supabase';
+import { ProfileFormData } from '../types/supabase';
 
 export function validateUsername(username: string): { isValid: boolean; error?: string } {
   if (!username) {
