@@ -118,7 +118,7 @@ export function RecipeUploadForm({ onUpload }: { onUpload?: () => void }) {
 
     try {
       // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setError('You must be logged in to upload a recipe.');
         setLoading(false);

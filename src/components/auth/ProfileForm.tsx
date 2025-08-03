@@ -10,7 +10,6 @@ interface ProfileFormProps {
 }
 
 export function ProfileForm({ onSuccess }: ProfileFormProps) {
-  const [profile, setProfile] = useState<Profile | null>(null);
   const [formData, setFormData] = useState<ProfileFormData>({
     user_name: '',
     full_name: '',
@@ -32,7 +31,7 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
   // Fetch user profile on component mount
   useEffect(() => {
     fetchProfile();
-  }, []);
+  }, [fetchProfile]);
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -52,7 +51,6 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
       if (error) {
         setError(error.message);
       } else if (data) {
-        setProfile(data);
         setFormData({
           user_name: data.user_name || '',
           full_name: data.full_name || '',
@@ -62,7 +60,7 @@ export function ProfileForm({ onSuccess }: ProfileFormProps) {
           social_links: data.social_links || {}
         });
       }
-    } catch (err) {
+    } catch {
       setError('Failed to fetch profile');
     } finally {
       setLoading(false);

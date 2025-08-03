@@ -27,8 +27,8 @@ export default async function MyRecipesPage() {
       .maybeSingle()
   ]);
 
-  const { data: recipes, error: recipesError } = recipesResult;
-  const { data: profile, error: profileError } = profileResult;
+  const { data: recipes } = recipesResult;
+  const { data: profile } = profileResult;
 
   // Fetch like counts and check if user has liked each recipe
   let recipesWithSocial: RecipeWithSocial[] = [];

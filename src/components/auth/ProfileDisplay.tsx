@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { Profile } from '@/types/supabase';
-import Link from 'next/link';
 
 interface ProfileDisplayProps {
   userId?: string;
@@ -21,7 +20,7 @@ export function ProfileDisplay({ userId }: ProfileDisplayProps) {
 
   useEffect(() => {
     fetchProfile();
-  }, [userId]);
+  }, [userId, fetchProfile]);
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -48,7 +47,7 @@ export function ProfileDisplay({ userId }: ProfileDisplayProps) {
       } else if (data) {
         setProfile(data);
       }
-    } catch (err) {
+    } catch {
       setError('Failed to fetch profile');
     } finally {
       setLoading(false);

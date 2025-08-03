@@ -9,7 +9,7 @@ export interface Profile {
   location: string | null;
   website: string | null;
   social_links: Record<string, string> | null;
-  preferences: Record<string, any> | null;
+  preferences: Record<string, unknown> | null;
   created_at: string;
   updated_at: string;
 }

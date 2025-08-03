@@ -35,7 +35,7 @@ export function SignInForm({ onSuccess }: SignInFormProps) {
         onSuccess?.();
         window.location.href = '/';
       }
-    } catch (err) {
+    } catch {
       setLoading(false);
       setError('Login failed. Please try again.');
     }

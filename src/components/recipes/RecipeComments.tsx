@@ -6,13 +6,11 @@ import { CommentWithUser } from '../../types/supabase';
 
 interface RecipeCommentsProps {
   recipeId: string;
-  initialCommentCount: number;
   onCommentChange?: (newCount: number) => void;
 }
 
 export function RecipeComments({ 
   recipeId, 
-  initialCommentCount, 
   onCommentChange 
 }: RecipeCommentsProps) {
   const [comments, setComments] = useState<CommentWithUser[]>([]);
@@ -22,14 +20,9 @@ export function RecipeComments({
   const [editingComment, setEditingComment] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-
   useEffect(() => {
     fetchComments();
-  }, [recipeId]);
+  }, [recipeId, fetchComments]);
 
 
 

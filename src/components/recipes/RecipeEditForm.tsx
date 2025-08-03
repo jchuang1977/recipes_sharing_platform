@@ -5,17 +5,6 @@ import { createBrowserClient } from '@supabase/ssr';
 import Image from 'next/image';
 import { RecipeWithSocial } from '../../types/supabase';
 
-interface Recipe {
-  id: string;
-  title: string;
-  image_url: string | null;
-  created_at: string;
-  ingredients?: string[];
-  instructions?: string[];
-  cooking_time?: number | null;
-  difficulty?: 'Easy' | 'Medium' | 'Hard' | null;
-}
-
 interface RecipeEditFormProps {
   recipe: RecipeWithSocial;
   onSave: (recipe: RecipeWithSocial) => void;
@@ -116,7 +105,7 @@ export function RecipeEditForm({ recipe, onSave, onCancel }: RecipeEditFormProps
 
     try {
       // Get current user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setError('You must be logged in to edit a recipe.');
         setLoading(false);
@@ -154,7 +143,7 @@ export function RecipeEditForm({ recipe, onSave, onCancel }: RecipeEditFormProps
           const fileExt = imageFile.name.split('.').pop();
           const filePath = `recipes/${user.id}/${Date.now()}.${fileExt}`;
           
-          const { data: uploadData, error: uploadError } = await supabase.storage
+          const { error: uploadError } = await supabase.storage
             .from('images')
             .upload(filePath, imageFile, {
               cacheControl: '3600',

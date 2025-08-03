@@ -72,7 +72,7 @@ export function formatProfileData(data: ProfileFormData): ProfileFormData {
       Object.entries(data.social_links).map(([key, value]) => [
         key,
         value?.trim() || null
-      ]).filter(([_, value]) => value !== null)
+      ]).filter(([, value]) => value !== null)
     )
   };
 }

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 export function Navigation() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
@@ -23,7 +23,7 @@ export function Navigation() {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [checkUser, supabase.auth]);
 
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
