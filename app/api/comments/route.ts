@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from '../../../../src/utils/supabaseServer';
+import { createSupabaseServerClient } from '../../../src/utils/supabaseServer';
 import { NextRequest, NextResponse } from 'next/server';
 
 // PUT update comment

@@ -1,4 +1,4 @@
-import { Recipe } from '../types/supabase';
+import { Recipe, RecipeWithSocial } from '../types/supabase';
 
 export interface SearchFilters {
   searchTerm: string;
@@ -7,7 +7,7 @@ export interface SearchFilters {
   sortBy: 'newest' | 'oldest' | 'title' | 'cooking_time';
 }
 
-export function filterAndSortRecipes(recipes: Recipe[], filters: SearchFilters): Recipe[] {
+export function filterAndSortRecipes(recipes: RecipeWithSocial[], filters: SearchFilters): RecipeWithSocial[] {
   let filteredRecipes = [...recipes];
 
   // Filter by search term (title and ingredients)

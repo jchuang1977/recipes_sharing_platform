@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 export interface SearchFilters {
   searchTerm: string;
-  difficulty: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard' | '';
   maxCookingTime: string;
   sortBy: 'newest' | 'oldest' | 'title' | 'cooking_time';
 }

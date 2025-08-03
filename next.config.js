@@ -5,7 +5,7 @@ const nextConfig = {
       // API routes - map dynamic routes to query parameter routes
       {
         source: '/api/comments/:id',
-        destination: '/api/comments/comment?id=:id',
+        destination: '/api/comments?id=:id',
       },
       {
         source: '/api/recipes/:id/comments',
