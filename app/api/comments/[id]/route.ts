@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // PUT update comment
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createSupabaseServerClient();
@@ -17,7 +17,7 @@ export async function PUT(
       );
     }
 
-    const commentId = (await params).id;
+    const { id: commentId } = await params;
     const { content } = await request.json();
 
     if (!content || content.trim().length === 0) {
@@ -106,7 +106,7 @@ export async function PUT(
 // DELETE comment
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createSupabaseServerClient();
@@ -119,7 +119,7 @@ export async function DELETE(
       );
     }
 
-    const commentId = (await params).id;
+    const { id: commentId } = await params;
 
     // Check if user owns the comment
     const { data: existingComment } = await supabase

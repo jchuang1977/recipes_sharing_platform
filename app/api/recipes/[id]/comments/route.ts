@@ -4,11 +4,11 @@ import { NextRequest, NextResponse } from 'next/server';
 // GET comments for a recipe
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createSupabaseServerClient();
-    const recipeId = (await params).id;
+    const { id: recipeId } = await params;
 
     const { data: comments, error } = await supabase
       .from('recipe_comments')
@@ -62,7 +62,7 @@ export async function GET(
 // POST new comment
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createSupabaseServerClient();
@@ -75,7 +75,7 @@ export async function POST(
       );
     }
 
-    const recipeId = (await params).id;
+    const { id: recipeId } = await params;
     const { content, parent_id } = await request.json();
 
     if (!content || content.trim().length === 0) {
